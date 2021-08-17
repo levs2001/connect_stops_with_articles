@@ -7,8 +7,14 @@ STOPENDTIME_IND = 5
 PRODBEGTIME_IND = 3
 PRODENDTIME_IND = 4
 
-ARTICLE_IND = 0
+ARTICLE_PROD_IND = 0
+
+ARTICLE_GRAMM_IND = 1
+GRAMM_IND = 3
+
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+GRAMM_FILENAME = "gramm_code_prod.csv"
 
 
 def get_date_obj(str_date):
@@ -19,6 +25,16 @@ def get_date_obj(str_date):
     except ValueError:
         print("Not date was ignored: " + str_date)
         return str_date
+
+
+def write_gramm_dict(gramm_filename):
+    with open(GRAMM_FILENAME, encoding="utf-8") as gramm_f:
+        gramm_r = csv.reader(gramm_f)
+        gramm_dict = {}
+        for row in gramm_r:
+            gramm_dict.update({row[ARTICLE_GRAMM_IND]: row[GRAMM_IND]})
+        gramm_dict.pop("Product Asigned")
+        return gramm_dict
 
 
 if __name__ == '__main__':
@@ -50,12 +66,21 @@ if __name__ == '__main__':
     articles.pop(0)
     ####
 
+    try:
+        gramm_dict = write_gramm_dict(GRAMM_FILENAME)
+    except FileNotFoundError:
+        print("Grammage file not found! Writing will be without it.")
+
     # Вставляем в таблицу стопов артикул, на котором произошла остановка
     for stop in stops:
         for article in articles:
             if (stop[STOPBEGTIME_IND] >= article[PRODBEGTIME_IND] and stop[STOPBEGTIME_IND] <= article[
                 PRODENDTIME_IND]):
-                stop.append(article[ARTICLE_IND])
+                stop.append(article[ARTICLE_PROD_IND])
+                if article[ARTICLE_PROD_IND] in gramm_dict:
+                    stop.append(gramm_dict[article[ARTICLE_PROD_IND]])
+                else:
+                    stop.append("-1")
                 break
     ####
 
@@ -66,6 +91,7 @@ if __name__ == '__main__':
             stop[STOPBEGTIME_IND] = stop[STOPBEGTIME_IND].strftime(DATE_FORMAT)
             stop[STOPENDTIME_IND] = stop[STOPENDTIME_IND].strftime(DATE_FORMAT)
         stops_title.append("ARTNO")
+        stops_title.append("GRAMMAGE")
         stops.insert(0, stops_title)
         writer.writerows(stops)
     ####
